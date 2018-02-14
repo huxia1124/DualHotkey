@@ -185,6 +185,7 @@
   <ItemGroup>
     <ClInclude Include="ChildFrm.h" />
     <ClInclude Include="ClassView.h" />
+    <ClInclude Include="DualHotkey.h" />
     <ClInclude Include="DualHotkeySample.h" />
     <ClInclude Include="DualHotkeySampleDoc.h" />
     <ClInclude Include="DualHotkeySampleView.h" />
@@ -200,6 +201,7 @@
   <ItemGroup>
     <ClCompile Include="ChildFrm.cpp" />
     <ClCompile Include="ClassView.cpp" />
+    <ClCompile Include="DualHotkey.cpp" />
     <ClCompile Include="DualHotkeySample.cpp" />
     <ClCompile Include="DualHotkeySampleDoc.cpp" />
     <ClCompile Include="DualHotkeySampleView.cpp" />
