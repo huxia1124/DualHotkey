@@ -213,7 +213,7 @@ int CDualHotkey::TranslateAccelerator(HWND hWnd, LPMSG lpMsg)
 	return 0;
 }
 
-CDualHotkey::DUAL_ACCEL *CDualHotkey::IsAcceleratorMatch(LPMSG lpMsg, DUAL_ACCEL &dacc)
+CDualHotkey::DUAL_ACCEL* CDualHotkey::IsAcceleratorMatch(LPMSG lpMsg, DUAL_ACCEL &dacc)
 {
 	return IsAcceleratorMatch(lpMsg, dacc.acc1) ? &dacc : nullptr;
 }

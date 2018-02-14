@@ -22,10 +22,10 @@
 class IDualHotkeyCallback
 {
 public:
-	virtual void OnHotkeySkipped(ACCEL &accel) = 0;
-	virtual void OnWaitingForHotkey(ACCEL &accel) = 0;
-	virtual void OnHotkeyNotExists(ACCEL &acc1, ACCEL &acc2) = 0;
-	virtual void OnHotkeyTranslated() = 0;
+	virtual void OnHotkeySkipped(ACCEL &accel) {};
+	virtual void OnWaitingForHotkey(ACCEL &accel) {};
+	virtual void OnHotkeyNotExists(ACCEL &acc1, ACCEL &acc2) {};
+	virtual void OnHotkeyTranslated() {};
 };
 
 class CDualHotkey
@@ -42,7 +42,9 @@ public:
 
 	bool AddAccelerator(const ACCEL &accel);
 	bool AddAccelerator(const ACCEL &acc1, const ACCEL &acc2);
+
 	DUAL_ACCEL* FindAcceleratorByCommand(UINT cmdId);
+
 	const std::vector<DUAL_ACCEL> GetAllAccelerators() const { return _accList; }
 	void SetCallback(IDualHotkeyCallback *pCallback) { _callback = pCallback; }
 	IDualHotkeyCallback *GetCallback() const { return _callback; }
@@ -52,7 +54,7 @@ public:
 	int TranslateAccelerator(HWND hWnd, LPMSG lpMsg);
 
 protected:
-	DUAL_ACCEL *IsAcceleratorMatch(LPMSG lpMsg, DUAL_ACCEL &dacc);
+	DUAL_ACCEL* IsAcceleratorMatch(LPMSG lpMsg, DUAL_ACCEL &dacc);
 	bool IsAcceleratorMatch(LPMSG lpMsg, ACCEL &accel);
 
 	int TranslateSingleAccelerator(_In_ HWND hWnd, _In_ ACCEL &accel, _In_ LPMSG lpMsg);
@@ -63,6 +65,5 @@ protected:
 	int _accIndex;
 	DUAL_ACCEL *_lastDacc;
 	std::vector<DUAL_ACCEL> _accList;
-
 };
 
