@@ -54,6 +54,8 @@ public:
 	int TranslateAccelerator(HWND hWnd, LPMSG lpMsg);
 
 protected:
+	bool InternalAddAccelerator(const ACCEL& accel);
+
 	DUAL_ACCEL* IsAcceleratorMatch(LPMSG lpMsg, DUAL_ACCEL &dacc);
 	bool IsAcceleratorMatch(LPMSG lpMsg, ACCEL &accel);
 

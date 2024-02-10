@@ -33,20 +33,7 @@ CDualHotkey::~CDualHotkey()
 bool CDualHotkey::AddAccelerator(const ACCEL &accel)
 {
 	ASSERT(accel.cmd != 0);
-
-	for (DUAL_ACCEL &dacc : _accList)
-	{
-		if (AcceleratorEqual(dacc.acc1, accel))
-		{
-			return false;
-		}
-	}
-
-	DUAL_ACCEL dacc;
-	dacc.acc1 = accel;
-
-	_accList.push_back(dacc);
-	return true;
+	return InternalAddAccelerator(accel);
 }
 
 bool CDualHotkey::AddAccelerator(const ACCEL &acc1, const ACCEL &acc2)
@@ -54,7 +41,7 @@ bool CDualHotkey::AddAccelerator(const ACCEL &acc1, const ACCEL &acc2)
 	ASSERT(acc2.cmd != 0);
 	ASSERT(acc1.cmd == acc2.cmd || acc1.cmd == 0);
 
-	AddAccelerator(acc1);
+	InternalAddAccelerator(acc1);
 	for (DUAL_ACCEL &dacc : _accList)
 	{
 		if (AcceleratorEqual(dacc.acc1, acc1))
@@ -211,6 +198,23 @@ int CDualHotkey::TranslateAccelerator(HWND hWnd, LPMSG lpMsg)
 	}
 
 	return 0;
+}
+
+bool CDualHotkey::InternalAddAccelerator(const ACCEL& accel)
+{
+	for (DUAL_ACCEL& dacc : _accList)
+	{
+		if (AcceleratorEqual(dacc.acc1, accel))
+		{
+			return false;
+		}
+	}
+
+	DUAL_ACCEL dacc;
+	dacc.acc1 = accel;
+
+	_accList.push_back(dacc);
+	return true;
 }
 
 CDualHotkey::DUAL_ACCEL* CDualHotkey::IsAcceleratorMatch(LPMSG lpMsg, DUAL_ACCEL &dacc)
