@@ -19,12 +19,13 @@
 
 #include <vector>
 
+// Callback functions
 class IDualHotkeyCallback
 {
 public:
-	virtual void OnHotkeySkipped(ACCEL &accel) {};
-	virtual void OnWaitingForHotkey(ACCEL &accel) {};
-	virtual void OnHotkeyNotExists(ACCEL &acc1, ACCEL &acc2) {};
+	virtual void OnHotkeySkipped(const ACCEL &accel) {};
+	virtual void OnWaitingForHotkey(const ACCEL &accel) {};
+	virtual void OnHotkeyNotExists(const ACCEL &acc1, const ACCEL &acc2) {};
 	virtual void OnHotkeyTranslated() {};
 };
 
@@ -43,29 +44,48 @@ public:
 	bool AddAccelerator(const ACCEL &accel);
 	bool AddAccelerator(const ACCEL &acc1, const ACCEL &acc2);
 
-	DUAL_ACCEL* FindAcceleratorByCommand(UINT cmdId);
+	const DUAL_ACCEL* FindAcceleratorByCommand(UINT cmdId) const;
 
-	const std::vector<DUAL_ACCEL> GetAllAccelerators() const { return _accList; }
+	const std::vector<DUAL_ACCEL>& GetAllAccelerators() const { return _accList; }
+
 	void SetCallback(IDualHotkeyCallback *pCallback) { _callback = pCallback; }
 	IDualHotkeyCallback *GetCallback() const { return _callback; }
+
+	// Import accelerator configurations from a given accelerator table.
 	void ImportAccelerators(HACCEL hAccel);
 
-	// Return non-zero if translated, otherwise return 0
+	// Call this function in your message loop to monitor keyboard events and trigger commands
+	// Returns non-zero if translated, otherwise return 0
 	int TranslateAccelerator(HWND hWnd, LPMSG lpMsg);
 
 protected:
 	bool InternalAddAccelerator(const ACCEL& accel);
 
-	DUAL_ACCEL* IsAcceleratorMatch(LPMSG lpMsg, DUAL_ACCEL &dacc);
-	bool IsAcceleratorMatch(LPMSG lpMsg, ACCEL &accel);
+	// Check to see if the given message matches the first accelerator of the given accelerator pair
+	// if it matches, returns the pointer of the accelerator pair (the address of the input dacc parameter)
+	// returns nullptr if it does not match.
+	const DUAL_ACCEL* GetDualAccelerator(LPMSG lpMsg, const DUAL_ACCEL &dacc) const;
 
-	int TranslateSingleAccelerator(_In_ HWND hWnd, _In_ ACCEL &accel, _In_ LPMSG lpMsg);
-	bool AcceleratorEqual(const ACCEL &acc1, const ACCEL &acc2);
+	// Check to see if the given message matches the accelerator configuration
+	bool IsAcceleratorMatch(LPMSG lpMsg, const ACCEL &accel) const;
+
+	int TranslateSingleAccelerator(HWND hWnd, const ACCEL &accel, LPMSG lpMsg);
+
+	// Check to see if the two given accelerators are equal (same keys and same virtual keys)
+	static bool AcceleratorEqual(const ACCEL &acc1, const ACCEL &acc2);
 	
 protected:
+
+	// Callback
 	IDualHotkeyCallback *_callback;
+
+	// Current accelerator index, can be 0 or 1
 	int _accIndex;
-	DUAL_ACCEL *_lastDacc;
+
+	// When dual accelerators 
+	const DUAL_ACCEL *_lastDacc;
+
+	// Dual hotkey configurations
 	std::vector<DUAL_ACCEL> _accList;
 };
 

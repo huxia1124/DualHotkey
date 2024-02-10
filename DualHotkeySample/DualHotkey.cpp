@@ -61,9 +61,9 @@ bool CDualHotkey::AddAccelerator(const ACCEL &acc1, const ACCEL &acc2)
 	return false;
 }
 
-CDualHotkey::DUAL_ACCEL* CDualHotkey::FindAcceleratorByCommand(UINT cmdId)
+const CDualHotkey::DUAL_ACCEL* CDualHotkey::FindAcceleratorByCommand(UINT cmdId) const
 {
-	for (DUAL_ACCEL &dacc : _accList)
+	for (const DUAL_ACCEL &dacc : _accList)
 	{
 		if (dacc.acc2.empty())
 		{
@@ -74,7 +74,7 @@ CDualHotkey::DUAL_ACCEL* CDualHotkey::FindAcceleratorByCommand(UINT cmdId)
 		}
 		else
 		{
-			for (ACCEL &acc : dacc.acc2)
+			for (const ACCEL &acc : dacc.acc2)
 			{
 				if (acc.cmd == cmdId)
 				{
@@ -93,7 +93,7 @@ void CDualHotkey::ImportAccelerators(HACCEL hAccel)
 	accList.resize(accelSize);
 	::CopyAcceleratorTable(hAccel, accList.data(), accelSize);
 
-	for (ACCEL &acc : accList)
+	for (const ACCEL &acc : accList)
 	{
 		AddAccelerator(acc);
 	}
@@ -103,6 +103,7 @@ int CDualHotkey::TranslateAccelerator(HWND hWnd, LPMSG lpMsg)
 {
 	switch (lpMsg->message)
 	{
+		// Only cares about these 4 message types
 	case WM_KEYDOWN:
 	case WM_SYSKEYDOWN:
 	case WM_CHAR:
@@ -113,12 +114,14 @@ int CDualHotkey::TranslateAccelerator(HWND hWnd, LPMSG lpMsg)
 		return 0;
 	}
 
-	DUAL_ACCEL *pDacc = nullptr;
+	const DUAL_ACCEL *pDacc = nullptr;
 	if (_accIndex == 0)
 	{
-		for (DUAL_ACCEL &dacc : _accList)
+		// Current index is 0, we are looking for the first part of the accelerator pair
+		// Find the accelerator pair based on the first accelerator of the pair
+		for (const DUAL_ACCEL &dacc : _accList)
 		{
-			pDacc = IsAcceleratorMatch(lpMsg, dacc);
+			pDacc = GetDualAccelerator(lpMsg, dacc);
 			if (pDacc)
 			{
 				break;
@@ -127,6 +130,7 @@ int CDualHotkey::TranslateAccelerator(HWND hWnd, LPMSG lpMsg)
 
 		if (pDacc == nullptr)
 		{
+			// First accelerator is not found.
 			if (_callback)
 			{
 				_callback->OnHotkeySkipped(pDacc->acc1);
@@ -135,12 +139,15 @@ int CDualHotkey::TranslateAccelerator(HWND hWnd, LPMSG lpMsg)
 			return 0;
 		}
 
+		// Found first accelerator
 		if (pDacc->acc2.empty())
 		{
+			// But this accelerator pair is cinfigured to be single hotkey. Translate and trigger it immediately.
 			return TranslateSingleAccelerator(hWnd, pDacc->acc1, lpMsg);
 		}
 		else
 		{
+			// Set up member variables  to get ready for the next hotkey
 			_lastDacc = pDacc;
 			_accIndex = 1;
 
@@ -152,6 +159,7 @@ int CDualHotkey::TranslateAccelerator(HWND hWnd, LPMSG lpMsg)
 	}
 	else if(lpMsg->message == WM_KEYDOWN)
 	{
+		// If this is a virtua-keys-only message (i.e. pressed Ctrl and released without actually triggering a hotkey combination like Ctrl+C)
 		switch (lpMsg->wParam)
 		{
 		case VK_CONTROL:
@@ -161,11 +169,14 @@ int CDualHotkey::TranslateAccelerator(HWND hWnd, LPMSG lpMsg)
 		}
 
 		pDacc = _lastDacc;
+		ASSERT(pDacc);
 
+		// No matter whether a command is found, just reset the member variables so we can start waiting for a new accelerator pair
 		_accIndex = 0;
 		_lastDacc = nullptr;
 
-		for (ACCEL &acc : pDacc->acc2)
+		// find the matched 2nd accelerator. If found, trigger the command.
+		for (const ACCEL &acc : pDacc->acc2)
 		{
 			if (IsAcceleratorMatch(lpMsg, acc))
 			{
@@ -173,6 +184,7 @@ int CDualHotkey::TranslateAccelerator(HWND hWnd, LPMSG lpMsg)
 			}
 		}
 
+		// If not found, report a hotkey miss through callback
 		ACCEL accHit;
 		accHit.fVirt = 0;
 		if (GetKeyState(VK_CONTROL) & 0x8000)
@@ -217,16 +229,17 @@ bool CDualHotkey::InternalAddAccelerator(const ACCEL& accel)
 	return true;
 }
 
-CDualHotkey::DUAL_ACCEL* CDualHotkey::IsAcceleratorMatch(LPMSG lpMsg, DUAL_ACCEL &dacc)
+const CDualHotkey::DUAL_ACCEL* CDualHotkey::GetDualAccelerator(LPMSG lpMsg, const DUAL_ACCEL &dacc) const
 {
 	return IsAcceleratorMatch(lpMsg, dacc.acc1) ? &dacc : nullptr;
 }
 
-bool CDualHotkey::IsAcceleratorMatch(LPMSG lpMsg, ACCEL &accel)
+bool CDualHotkey::IsAcceleratorMatch(LPMSG lpMsg, const ACCEL &accel) const
 {
 	BOOL fVirt = FALSE;
 
-	switch (lpMsg->message) {
+	switch (lpMsg->message)
+	{
 	case WM_KEYDOWN:
 	case WM_SYSKEYDOWN:
 		fVirt = TRUE;
@@ -241,6 +254,11 @@ bool CDualHotkey::IsAcceleratorMatch(LPMSG lpMsg, ACCEL &accel)
 		return false;
 	}
 
+	// The 'key' does not match
+	if (static_cast<DWORD>(accel.key) != lpMsg->wParam)
+		return false;
+
+	// Check virtual keys like Ctrl, ALT, Shift etc.
 	UINT keystate = 0;
 	if (GetKeyState(VK_CONTROL) & 0x8000)
 	{
@@ -256,33 +274,36 @@ bool CDualHotkey::IsAcceleratorMatch(LPMSG lpMsg, ACCEL &accel)
 	}
 
 	UINT flags = accel.fVirt;
-	if ((DWORD)accel.key != lpMsg->wParam ||
-		((fVirt != 0) != ((flags & FVIRTKEY) != 0)))
+	if (((fVirt != 0) != ((flags & FVIRTKEY) != 0)))
 	{
+		// virtual keys do not match
 		return false;
 	}
 
 	if (fVirt && ((keystate & (FSHIFT | FCONTROL)) != (flags & (FSHIFT | FCONTROL))))
 	{
+		// virtual keys do not match for Shift+Ctrl combination
 		return false;
 	}
 
 	if ((keystate & FALT) != (flags & FALT))
 	{
+		// virtual keys do not match for ALT
 		return false;
 	}
 
 	return true;
 }
 
-int CDualHotkey::TranslateSingleAccelerator(_In_ HWND hWnd, _In_ ACCEL &accel, _In_ LPMSG lpMsg)
+int CDualHotkey::TranslateSingleAccelerator(HWND hWnd, const ACCEL &accel, LPMSG lpMsg)
 {
 	if (_callback)
 	{
 		_callback->OnHotkeyTranslated();
 	}
 
-	HACCEL hAccel = CreateAcceleratorTable(&accel, 1);
+	ACCEL accelCopy = accel;
+	HACCEL hAccel = CreateAcceleratorTable(&accelCopy, 1);
 	int result = ::TranslateAccelerator(hWnd, hAccel, lpMsg);
 	DestroyAcceleratorTable(hAccel);
 	return result;
