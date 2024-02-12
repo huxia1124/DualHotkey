@@ -23,10 +23,12 @@
 class IDualHotkeyCallback
 {
 public:
-	virtual void OnHotkeySkipped(const ACCEL &accel) {};
-	virtual void OnWaitingForHotkey(const ACCEL &accel) {};
-	virtual void OnHotkeyNotExists(const ACCEL &acc1, const ACCEL &acc2) {};
-	virtual void OnHotkeyTranslated() {};
+	virtual void OnHotkeySkipped(const ACCEL &accel) {}
+	virtual void OnHotkeyDenied(const ACCEL& acc1, const ACCEL* acc2) {}
+	virtual void OnWaitingForHotkey(const ACCEL &accel) {}
+	virtual void OnHotkeyNotExists(const ACCEL &acc1, const ACCEL &acc2) {}
+	virtual void OnHotkeyTranslated(const ACCEL& accel) {}
+	virtual bool IsHotkeyEnabled(const ACCEL& accel) { return true; }
 };
 
 class CDualHotkey
@@ -69,7 +71,7 @@ protected:
 	// Check to see if the given message matches the accelerator configuration
 	bool IsAcceleratorMatch(LPMSG lpMsg, const ACCEL &accel) const;
 
-	int TranslateSingleAccelerator(HWND hWnd, const ACCEL &accel, LPMSG lpMsg);
+	int TranslateSingleAccelerator(HWND hWnd, const ACCEL& acc1, const ACCEL* acc2, LPMSG lpMsg);
 
 	// Check to see if the two given accelerators are equal (same keys and same virtual keys)
 	static bool AcceleratorEqual(const ACCEL &acc1, const ACCEL &acc2);

@@ -143,7 +143,7 @@ int CDualHotkey::TranslateAccelerator(HWND hWnd, LPMSG lpMsg)
 		if (pDacc->acc2.empty())
 		{
 			// But this accelerator pair is cinfigured to be single hotkey. Translate and trigger it immediately.
-			return TranslateSingleAccelerator(hWnd, pDacc->acc1, lpMsg);
+			return TranslateSingleAccelerator(hWnd, pDacc->acc1, nullptr, lpMsg);
 		}
 		else
 		{
@@ -180,7 +180,7 @@ int CDualHotkey::TranslateAccelerator(HWND hWnd, LPMSG lpMsg)
 		{
 			if (IsAcceleratorMatch(lpMsg, acc))
 			{
-				return TranslateSingleAccelerator(hWnd, acc, lpMsg);
+				return TranslateSingleAccelerator(hWnd, pDacc->acc1, &acc, lpMsg);
 			}
 		}
 
@@ -295,14 +295,22 @@ bool CDualHotkey::IsAcceleratorMatch(LPMSG lpMsg, const ACCEL &accel) const
 	return true;
 }
 
-int CDualHotkey::TranslateSingleAccelerator(HWND hWnd, const ACCEL &accel, LPMSG lpMsg)
+int CDualHotkey::TranslateSingleAccelerator(HWND hWnd, const ACCEL &acc1, const ACCEL* acc2, LPMSG lpMsg)
 {
+	const ACCEL* accEffective = acc2 ? acc2 : &acc1;
+
 	if (_callback)
 	{
-		_callback->OnHotkeyTranslated();
+		if (!_callback->IsHotkeyEnabled(*accEffective))
+		{
+			_callback->OnHotkeyDenied(acc1, acc2);
+			return 1;
+		}
+
+		_callback->OnHotkeyTranslated(*accEffective);
 	}
 
-	ACCEL accelCopy = accel;
+	ACCEL accelCopy = *accEffective;
 	HACCEL hAccel = CreateAcceleratorTable(&accelCopy, 1);
 	int result = ::TranslateAccelerator(hWnd, hAccel, lpMsg);
 	DestroyAcceleratorTable(hAccel);
